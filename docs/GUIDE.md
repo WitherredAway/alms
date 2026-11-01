@@ -584,7 +584,7 @@ flowchart LR
     C --- V[("volume alms-data<br/>/data/alms.db")]
 ```
 
-**1. Get the code onto the VM.** The repo is private, so authenticate first: either `gh auth login`, or clone with a personal access token.
+**1. Get the code onto the VM.**
 ```bash
 git clone https://github.com/WitherredAway/alms.git
 cd alms
