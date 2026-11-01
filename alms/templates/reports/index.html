@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block heading %}Reports &amp; audit summaries{% endblock %}
+{% block content %}
+<ul class="nav nav-pills mb-3 no-print flex-wrap">{% for k, label in tabs %}<li class="nav-item"><a class="nav-link {{ 'active' if k == tab }}" href="?tab={{ k }}&days={{ days }}">{{ label }}</a></li>{% endfor %}</ul>
+<div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+  {% if tab in ('overview','frequency','fines') %}<div class="btn-group btn-group-sm no-print">{% for d in (7, 30, 90, 365) %}<a class="btn btn-outline-secondary {{ 'active' if d == days }}" href="?tab={{ tab }}&days={{ d }}">{{ d }} days</a>{% endfor %}</div>{% endif %}
+  <h2 class="h6 mb-0 d-none d-print-block">{{ library_name }} — {{ dict(tabs)[tab] }} — generated {{ today|fdate }}</h2>
+  <div class="ms-auto d-flex gap-2 no-print">
+    {% if tab != 'overview' %}<a class="btn btn-sm btn-outline-success" href="?tab={{ tab }}&days={{ days }}&export=csv"><i class="bi bi-filetype-csv"></i> Export CSV</a>{% endif %}
+    <button class="btn btn-sm btn-outline-primary" onclick="window.print()"><i class="bi bi-filetype-pdf"></i> Print / Save as PDF</button>
+  </div>
+</div>
+{% if tab == 'overview' %}
+<div class="row g-3 mb-3">{% for label, key, money in (('Books issued','issued',0),('Returned','returned',0),('Late returns','late_returns',0),('Members borrowing','active_members',0),('Holds placed','holds_placed',0),('Fines collected','collected',1),('Fines waived','waived',1),('Outstanding (all time)','outstanding',1)) %}
+  <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="small text-muted">{{ label }}</div><div class="fs-4 fw-semibold">{{ ov.summary[key]|rupees if money else ov.summary[key] }}</div></div></div></div>{% endfor %}</div>
+<div class="row g-3">
+  <div class="col-lg-8"><div class="card"><div class="card-header">Books issued — last {{ days }} days</div><div class="card-body"><canvas id="c1" height="120"></canvas></div></div></div>
+  <div class="col-lg-4"><div class="card mb-3"><div class="card-header">By category</div><div class="card-body"><canvas id="c2" height="200"></canvas></div></div>
+    <div class="card"><div class="card-header">Inventory status</div><div class="card-body"><canvas id="c3" height="200"></canvas></div></div></div>
+</div>
+{% else %}
+{% if chart and chart.labels %}<div class="card mb-3"><div class="card-header">Top 10 most issued — last {{ days }} days</div><div class="card-body"><canvas id="c4" height="90"></canvas></div></div>{% endif %}
+<div class="card"><div class="table-responsive"><table class="table table-sm table-striped align-middle mb-0">
+  <thead><tr>{% for h in head %}<th>{{ h }}</th>{% endfor %}</tr></thead><tbody>
+  {% for row in data %}<tr>{% for c in row %}<td class="small">{{ ('%.0f'|format(c)) if c is float else (c if c is not none else '—') }}</td>{% endfor %}</tr>
+  {% else %}<tr><td colspan="{{ head|length }}" class="text-center text-muted py-4">No records.</td></tr>{% endfor %}
+  </tbody></table></div><div class="card-footer bg-white small text-muted">{{ data|length }} row(s)</div></div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script>
+{% if tab == 'overview' %}
+const ov = {{ ov|tojson }};
+new Chart(c1, { type: 'line', data: { labels: ov.trend.labels, datasets: [{ label: 'Issued', data: ov.trend.values, fill: true, tension: .3, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.15)' }] }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+new Chart(c2, { type: 'doughnut', data: { labels: ov.cats.labels, datasets: [{ data: ov.cats.values }] }, options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } } });
+new Chart(c3, { type: 'pie', data: { labels: ov.status.labels, datasets: [{ data: ov.status.values }] }, options: { plugins: { legend: { position: 'bottom' } } } });
+{% elif chart and chart.labels %}
+const ch = {{ chart|tojson }};
+new Chart(c4, { type: 'bar', data: { labels: ch.labels, datasets: [{ label: 'Times issued', data: ch.values, backgroundColor: '#6366f1' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } } });
+{% endif %}
+</script>
+{% endblock %}
