@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import role_badge, due_badge, post_button %}
+{% block title %}{{ u.name }}{% endblock %}
+{% block heading %}<a href="{{ url_for('admin.members') }}" class="text-decoration-none">Members</a> / {{ u.name }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card"><div class="card-body">
+      <div class="d-flex justify-content-between"><h1 class="h5 mb-0">{{ u.name }}</h1>{{ role_badge(u.role) }}</div>
+      <div class="font-monospace text-muted">{{ u.member_code }}</div>
+      <dl class="row small mt-3 mb-0"><dt class="col-4">Dept.</dt><dd class="col-8">{{ u.department or '—' }}</dd><dt class="col-4">Email</dt><dd class="col-8">{{ u.email or '—' }}</dd>
+        <dt class="col-4">Mobile</dt><dd class="col-8">{{ u.phone or '—' }}</dd><dt class="col-4">Since</dt><dd class="col-8">{{ u.created_at|fdate }}</dd>
+        <dt class="col-4">Account</dt><dd class="col-8">{{ 'Active' if u.active else 'Inactive' }}</dd></dl>
+      <div class="text-center"><svg data-barcode="{{ u.member_code }}" data-height="40"></svg></div>
+    </div>
+    {% if editable %}<div class="card-footer bg-white d-flex flex-wrap gap-1">
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.member_edit', user_id=u.id) }}"><i class="bi bi-pencil"></i> Edit</a>
+      {{ post_button(url_for('admin.member_reset_password', user_id=u.id), 'Reset password', 'btn btn-sm btn-outline-warning', confirm='Generate a new temporary password?') }}
+      {{ post_button(url_for('admin.member_toggle', user_id=u.id), 'Deactivate' if u.active else 'Reactivate', 'btn btn-sm btn-outline-danger' if u.active else 'btn btn-sm btn-outline-success', confirm='Change account status?') }}
+    </div>{% endif %}</div>
+  </div>
+  <div class="col-lg-8">
+    {% if u.role in ('student','faculty') %}
+    <div class="card mb-3"><div class="card-body d-flex flex-wrap gap-4 align-items-center">
+      <div>{% if status.eligible %}<span class="badge text-bg-success fs-6">Eligible to borrow</span>{% else %}<span class="badge text-bg-danger fs-6">Blocked</span>{% endif %}</div>
+      <div>Loans <b>{{ status.loans|length }} / {{ status.quota }}</b></div><div>Unpaid <b>{{ status.unpaid_total|rupees }}</b></div><div>Accruing <b>{{ status.accruing_total|rupees }}</b></div>
+      <div class="ms-auto d-flex gap-2"><a class="btn btn-sm btn-primary" href="{{ url_for('desk.index', member=u.member_code) }}"><i class="bi bi-upc-scan"></i> Issue</a><a class="btn btn-sm btn-outline-danger" href="{{ url_for('desk.fines', user_id=u.id) }}"><i class="bi bi-cash-coin"></i> Fines</a></div>
+    </div>{% if status.reasons %}<div class="card-footer bg-white small text-danger">{{ status.reasons|join(' · ') }}</div>{% endif %}</div>
+    <div class="card mb-3"><div class="card-header">Current loans</div><table class="table table-sm align-middle mb-0"><tbody>
+      {% for l in status.loans %}<tr><td>{{ l.title }} <span class="small text-muted font-monospace">{{ l.barcode }}</span></td><td>{{ due_badge(l) }}</td><td class="text-end">
+        <a class="btn btn-sm btn-success" href="{{ url_for('desk.index', tab='return', barcode=l.barcode) }}">Return</a>
+        {{ post_button(url_for('desk.renew', loan_id=l.id), 'Renew', 'btn btn-sm btn-outline-primary', next=request.path) }}</td></tr>
+      {% else %}<tr><td class="text-muted">None</td></tr>{% endfor %}</tbody></table></div>
+    {% if status.holds %}<div class="card mb-3"><div class="card-header">Holds</div><ul class="list-group list-group-flush">{% for h in status.holds %}<li class="list-group-item small">{{ h.title }} — {{ 'Ready until ' ~ (h.expires_at|fdate) if h.status == 'ready' else '#' ~ h.position ~ ' in queue' }}</li>{% endfor %}</ul></div>{% endif %}
+    <div class="card"><div class="card-header">Loan history</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Book</th><th>Issued</th><th>Returned</th><th>Status</th></tr></thead><tbody>
+      {% for l in history %}<tr><td>{{ l.title }}</td><td>{{ l.issue_date|fdate }}</td><td>{{ l.return_date|fdate }}{% if l.return_date and l.return_date > l.due_date %} <span class="badge text-bg-danger">late</span>{% endif %}</td><td>{{ l.status }}</td></tr>
+      {% else %}<tr><td colspan="4" class="text-muted">No history.</td></tr>{% endfor %}</tbody></table></div></div>
+    {% else %}<div class="alert alert-secondary">Staff account — no borrowing privileges.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

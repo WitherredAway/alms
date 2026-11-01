@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block heading %}Audit log{% endblock %}
+{% block content %}
+<form class="d-flex flex-wrap gap-2 mb-3">
+  <select class="form-select" style="max-width: 220px" name="action" aria-label="Action"><option value="">All actions</option>{% for a in actions %}<option {% if a == action %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>
+  <input class="form-control" style="max-width: 300px" name="q" value="{{ q }}" placeholder="Search details" aria-label="Search">
+  <button class="btn btn-outline-primary">Filter</button><span class="ms-auto small text-muted align-self-center">Latest {{ rows|length }} entries</span>
+</form>
+<div class="card"><div class="table-responsive"><table class="table table-sm align-middle mb-0">
+  <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Details</th></tr></thead><tbody>
+  {% for a in rows %}<tr><td class="small text-nowrap">{{ a.ts|fdatetime }}</td><td class="small">{{ a.name or 'System' }}{% if a.member_code %} <span class="text-muted">({{ a.member_code }})</span>{% endif %}</td>
+    <td><span class="badge text-bg-light border">{{ a.action }}</span></td><td class="small">{{ a.details }}</td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endblock %}
