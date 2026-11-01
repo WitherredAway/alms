@@ -48,6 +48,8 @@ def create_app(test_config=None):
     for bp in (auth.bp, main.bp, catalog.bp, desk.bp, member.bp, admin.bp, reports.bp):
         app.register_blueprint(bp)
 
+    app.jinja_env.globals["csrf_token"] = auth.csrf_token
+
     @app.before_request
     def _before():
         if request.endpoint == "static":
