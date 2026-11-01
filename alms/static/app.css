@@ -32,5 +32,7 @@ body { background: #f1f5f9; font-size: .95rem; }
 @media print {
   .sidebar, .topbar, .no-print, .alert-dismissible { display: none !important; }
   body { background: #fff; } .content { padding: 0; } .card { box-shadow: none; }
+  .table-responsive { overflow: visible !important; } .table { font-size: 10px; } .table td, .table th { white-space: normal !important; padding: .25rem .35rem !important; }
+  @page { size: A4 landscape; margin: 10mm; }
   a { text-decoration: none; color: inherit; }
 }
