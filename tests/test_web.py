@@ -61,3 +61,9 @@ def test_backup_and_restore(client, login, db):
     assert client.post("/admin/backup/create", data={"_csrf": client.csrf}).status_code == 302
     data = client.get("/admin/backup/download").data
     assert data[:15] == b"SQLite format 3"
+
+
+def test_return_result_shows_title_and_barcode(client, login):
+    login("LIB001")
+    html = client.post("/desk/return", data={"barcode": "BC100001", "_csrf": client.csrf}).get_data(as_text=True)
+    assert "Clean Code" in html and "BC100001" in html and "STU005" in html
