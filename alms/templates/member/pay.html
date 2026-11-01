@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Pay fines{% endblock %}
+{% block heading %}Pay late fees online{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <form method="post" class="card">{{ csrf() }}
+      <div class="card-header">Select fines to pay</div>
+      <ul class="list-group list-group-flush">
+      {% for f in status.unpaid_fines %}
+        <li class="list-group-item d-flex justify-content-between"><label class="form-check-label"><input class="form-check-input me-2" type="checkbox" name="fine_id" value="{{ f.id }}" data-amount="{{ f.amount }}" checked>{{ f.reason }}</label><b>{{ f.amount|rupees }}</b></li>
+      {% else %}<li class="list-group-item text-muted">You have no unpaid fines.</li>{% endfor %}
+      </ul>
+      {% if status.accruing_total %}<div class="alert alert-warning m-3 small">{{ status.accruing_total|rupees }} is still accruing on overdue books. Return them at the desk first; the final fine will then appear here.</div>{% endif %}
+      {% if status.unpaid_fines %}
+      <div class="card-body border-top">
+        <div class="mb-2 fw-semibold">Payment method <span class="badge text-bg-secondary">Simulated gateway</span></div>
+        <div class="form-check"><input class="form-check-input" type="radio" name="method" id="mUpi" value="upi" checked><label class="form-check-label" for="mUpi">UPI</label></div>
+        <input class="form-control my-2" name="upi_id" placeholder="yourname@okaxis" aria-label="UPI ID">
+        <div class="form-check"><input class="form-check-input" type="radio" name="method" id="mCard" value="card"><label class="form-check-label" for="mCard">Debit / credit card</label></div>
+        <input class="form-control my-2" name="card" placeholder="4111 1111 1111 1111" inputmode="numeric" aria-label="Card number">
+        <div class="d-flex justify-content-between align-items-center mt-3"><span>Total: <b id="selectedTotal" class="fs-4">₹0</b></span><button class="btn btn-success btn-lg"><i class="bi bi-lock"></i> Pay now</button></div>
+      </div>{% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}

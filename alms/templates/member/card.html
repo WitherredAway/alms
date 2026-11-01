@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Library card{% endblock %}
+{% block heading %}Library ID card{% endblock %}
+{% block content %}
+<div class="no-print mb-3"><button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print card</button></div>
+<div class="id-card">
+  <div class="top"><div class="fw-bold"><i class="bi bi-book-half"></i> {{ library_name }}</div><div class="small">Library membership card</div></div>
+  <div class="p-3">
+    <div class="fs-5 fw-semibold">{{ user.name }}</div>
+    <div class="text-muted small">{{ user.department or '' }} · {{ user.role|capitalize }}</div>
+    <div class="text-center mt-2"><svg data-barcode="{{ user.member_code }}" data-height="50" data-width="2"></svg></div>
+  </div>
+</div>
+{% endblock %}

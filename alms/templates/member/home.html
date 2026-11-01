@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_macros.html" import due_badge, post_button %}
+{% block title %}My dashboard{% endblock %}
+{% block heading %}Welcome, {{ g.user.name }}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="card stat-card h-100"><div class="card-body">
+    <div class="text-muted small">Borrowing status</div>
+    {% if status.eligible %}<div class="fs-4 fw-semibold text-success"><i class="bi bi-check-circle"></i> Eligible</div>
+    {% else %}<div class="fs-4 fw-semibold text-danger"><i class="bi bi-slash-circle"></i> Blocked</div>
+      <ul class="small text-danger mb-0 ps-3">{% for r in status.reasons %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
+  </div></div></div>
+  <div class="col-md-4"><div class="card stat-card h-100"><div class="card-body">
+    <div class="text-muted small">Books on loan</div><div class="fs-4 fw-semibold">{{ status.loans|length }} / {{ status.quota }}</div>
+    <div class="small text-muted">Loan period {{ 14 }} days · ₹{{ fine_rate }}/day after due date</div>
+  </div></div></div>
+  <div class="col-md-4"><div class="card stat-card h-100"><div class="card-body">
+    <div class="text-muted small">Fine balance</div>
+    <div class="fs-4 fw-semibold {{ 'text-danger' if status.balance else '' }}">{{ status.balance|rupees }}</div>
+    {% if status.accruing_total %}<div class="small text-warning-emphasis">incl. {{ status.accruing_total|rupees }} still accruing on overdue books</div>{% endif %}
+    {% if status.unpaid_total %}<a class="btn btn-sm btn-danger mt-2" href="{{ url_for('member.pay') }}"><i class="bi bi-credit-card"></i> Pay {{ status.unpaid_total|rupees }} online</a>{% endif %}
+  </div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card mb-3"><div class="card-header">My borrowed books</div>
+      <div class="table-responsive"><table class="table align-middle mb-0">
+        <thead><tr><th>Book</th><th>Issued</th><th>Due</th><th>Fine</th><th></th></tr></thead><tbody>
+        {% for l in status.loans %}
+        <tr><td><a href="{{ url_for('main.book_detail', book_id=l.book_id) }}">{{ l.title }}</a><div class="small text-muted">{{ l.author }}</div></td>
+          <td class="small">{{ l.issue_date|fdate }}</td><td>{{ due_badge(l) }}</td>
+          <td>{% if l.accrued %}<span class="text-danger">{{ l.accrued|rupees }}</span>{% else %}—{% endif %}</td>
+          <td class="text-end">{{ post_button(url_for('member.renew', loan_id=l.id), 'Renew', 'btn btn-sm btn-outline-primary', icon='arrow-repeat') }}</td></tr>
+        {% else %}<tr><td colspan="5" class="text-center text-muted py-4">No books on loan. <a href="{{ url_for('main.opac') }}">Search the catalog</a></td></tr>{% endfor %}
+        </tbody></table></div></div>
+    <div class="card"><div class="card-header">My holds &amp; reservations</div>
+      <ul class="list-group list-group-flush">
+      {% for h in status.holds %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span><a href="{{ url_for('main.book_detail', book_id=h.book_id) }}">{{ h.title }}</a>
+            {% if h.status == 'ready' %}<span class="badge text-bg-warning">Ready — collect by {{ h.expires_at|fdate }}</span>{% else %}<span class="badge text-bg-light border">#{{ h.position }} in queue</span>{% endif %}</span>
+          {{ post_button(url_for('member.hold_cancel', hold_id=h.id), 'Cancel', 'btn btn-sm btn-outline-danger', confirm='Cancel this hold?') }}
+        </li>
+      {% else %}<li class="list-group-item text-muted">No holds. When a book is fully checked out you can reserve it from its catalog page.</li>{% endfor %}
+      </ul></div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card"><div class="card-header d-flex justify-content-between"><span>Recent notifications</span><a class="small" href="{{ url_for('main.notifications') }}">All</a></div>
+      <ul class="list-group list-group-flush small">
+      {% for n in notes %}<li class="list-group-item {{ 'bg-primary-subtle' if not n.is_read }}"><b>{{ n.subject }}</b><div>{{ n.body }}</div><div class="text-muted">{{ n.created_at|fdatetime }}</div></li>
+      {% else %}<li class="list-group-item text-muted">Nothing yet.</li>{% endfor %}
+      </ul></div>
+  </div>
+</div>
+{% endblock %}
