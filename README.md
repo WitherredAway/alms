@@ -62,6 +62,8 @@ The sign-in page has one-click buttons for each account.
 | NFR-03 Daily backups | Automatic daily snapshot (last 7 kept) + manual backup/restore |
 | NFR-04 Usability | Responsive Bootstrap 5, labelled form fields, skip link, keyboard/scanner-friendly desk |
 
+For a deep dive into the architecture, code walkthrough, and how to build a system like this, see **[docs/GUIDE.md](docs/GUIDE.md)**.
+
 Data lives in `instance/alms.db`. Set `ALMS_DATA_DIR` to store it somewhere else.
 
 ## Development
