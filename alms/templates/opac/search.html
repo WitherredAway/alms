@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Catalog search{% endblock %}
+{% block heading %}OPAC — Online Public Access Catalog{% endblock %}
+{% macro body() %}
+<div class="card mb-3"><div class="card-body">
+  <form id="liveSearch" action="{{ url_for('main.opac') }}" class="row g-2 align-items-end" role="search">
+    <div class="col-md-6">
+      <label class="form-label small text-muted" for="q">Search by title, author or ISBN</label>
+      <div class="input-group input-group-lg"><span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input class="form-control" id="q" name="q" value="{{ q }}" placeholder="e.g. algorithms, Tagore, 9788100…" autofocus autocomplete="off"></div>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small text-muted" for="category">Category</label>
+      <select class="form-select form-select-lg" id="category" name="category">
+        <option value="">All categories</option>
+        {% for c in categories %}<option {% if c == category %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <div class="form-check form-switch mb-2">
+        <input class="form-check-input" type="checkbox" role="switch" id="available" name="available" value="1" {% if available %}checked{% endif %}>
+        <label class="form-check-label" for="available">Available copies only</label>
+      </div>
+    </div>
+  </form>
+</div></div>
+<div id="searchResults">{% include "opac/_results.html" %}</div>
+{% endmacro %}
+{% block content %}{{ body() }}{% endblock %}
+{% block public %}
+<nav class="navbar bg-white border-bottom mb-3"><div class="container"><span class="navbar-brand fw-bold text-primary"><i class="bi bi-book-half"></i> ALMS · Public Catalog</span><a class="btn btn-primary btn-sm" href="{{ url_for('auth.login') }}">Sign in</a></div></nav>
+<div class="container">{{ body() }}</div>
+{% endblock %}

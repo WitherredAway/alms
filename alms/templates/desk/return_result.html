@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Return processed{% endblock %}
+{% block heading %}Return processed{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card"><div class="card-body">
+      <h2 class="h5"><i class="bi bi-check-circle text-success"></i> “{{ r['copy'].title }}” checked in</h2>
+      <dl class="row mb-0">
+        <dt class="col-sm-4">Copy</dt><dd class="col-sm-8 font-monospace">{{ r['copy'].barcode }}</dd>
+        <dt class="col-sm-4">Returned by</dt><dd class="col-sm-8">{{ r.loan.name }} ({{ r.loan.member_code }})</dd>
+        <dt class="col-sm-4">Due date</dt><dd class="col-sm-8">{{ r.loan.due_date|fdate }}</dd>
+        <dt class="col-sm-4">Returned</dt><dd class="col-sm-8">{{ today|fdate }}</dd>
+        <dt class="col-sm-4">Overdue</dt><dd class="col-sm-8">{% if r.overdue_days %}<span class="text-danger fw-semibold">{{ r.overdue_days }} day(s)</span>{% else %}On time{% endif %}</dd>
+      </dl>
+      {% if r.fine %}
+      <div class="alert alert-danger mt-3 d-flex justify-content-between align-items-center">
+        <div><b>Fine assessed: {{ r.fine|rupees }}</b><div class="small">{{ r.overdue_days }} day(s) × ₹{{ fine_rate }}/day. Member is blocked from borrowing until paid.</div></div>
+        <a class="btn btn-danger" href="{{ url_for('desk.fines', user_id=r.loan.user_id) }}"><i class="bi bi-cash-coin"></i> Collect payment</a>
+      </div>
+      {% endif %}
+      {% if r.hold %}
+      <div class="alert alert-warning mt-3"><i class="bi bi-bookmark-star"></i> <b>Place on hold shelf.</b> This copy is reserved for <b>{{ r.hold.member_code }}</b> (next in queue). They have been notified by Email/SMS.</div>
+      {% elif request.form.condition == 'damaged' %}
+      <div class="alert alert-secondary mt-3"><i class="bi bi-tools"></i> Copy marked as <b>damaged</b> and withdrawn from circulation.</div>
+      {% else %}
+      <div class="alert alert-success mt-3"><i class="bi bi-bookshelf"></i> Copy restocked (+1) — shelve it back.</div>
+      {% endif %}
+      <a class="btn btn-primary" href="{{ url_for('desk.index', tab='return') }}" autofocus><i class="bi bi-upc-scan"></i> Next return</a>
+    </div></div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card"><div class="card-header">Member account after return</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between"><span>Status</span>{% if status.eligible %}<span class="badge text-bg-success">Eligible</span>{% else %}<span class="badge text-bg-danger">Blocked</span>{% endif %}</div>
+        <div class="d-flex justify-content-between"><span>Unpaid fines</span><b>{{ status.unpaid_total|rupees }}</b></div>
+        <div class="d-flex justify-content-between"><span>Active loans</span><span>{{ status.loans|length }} / {{ status.quota }}</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

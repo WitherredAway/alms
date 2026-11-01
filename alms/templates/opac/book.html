@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% from "_macros.html" import copy_badge, post_button, csrf %}
+{% block title %}{{ book.title }}{% endblock %}
+{% block heading %}<a href="{{ url_for('main.opac') }}" class="text-decoration-none">Catalog</a> / {{ book.title }}{% endblock %}
+{% macro body() %}
+{% set staff = g.user and g.user.role in ('librarian', 'admin') %}
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card"><div class="card-body">
+      <span class="badge text-bg-light border mb-2">{{ book.category }}</span>
+      <h1 class="h4">{{ book.title }}</h1>
+      <div class="text-muted mb-3">by {{ book.author }}</div>
+      <dl class="row small mb-0">
+        <dt class="col-4">ISBN</dt><dd class="col-8 font-monospace">{{ book.isbn }}</dd>
+        <dt class="col-4">Publisher</dt><dd class="col-8">{{ book.publisher or '—' }}{% if book.year %} ({{ book.year }}){% endif %}</dd>
+        <dt class="col-4">Shelf</dt><dd class="col-8 font-monospace">{{ book.shelf or '—' }}</dd>
+        <dt class="col-4">Availability</dt><dd class="col-8">{% if available %}<span class="badge text-bg-success">{{ available }} available</span>{% else %}<span class="badge text-bg-danger">None on shelf</span>{% endif %}</dd>
+        <dt class="col-4">Hold queue</dt><dd class="col-8">{{ queue|selectattr('status', 'equalto', 'waiting')|list|length }} waiting</dd>
+        <dt class="col-4">Times issued</dt><dd class="col-8">{{ history_count }}</dd>
+      </dl>
+    </div>
+    <div class="card-footer bg-white">
+      {% if g.user and g.user.role in ('student', 'faculty') %}
+        {% if my_loan %}
+          <div class="alert alert-info mb-0 py-2"><i class="bi bi-check2-circle"></i> You have this book on loan, due {{ my_loan.due_date|fdate }}.</div>
+        {% elif my_hold %}
+          <div class="alert alert-warning mb-0 py-2">
+            {% if my_hold.status == 'ready' %}<i class="bi bi-bookmark-check"></i> Your copy is ready at the desk — collect by {{ my_hold.expires_at|fdate }}.
+            {% else %}<i class="bi bi-hourglass-split"></i> You are #{{ my_hold.position }} in the hold queue.{% endif %}
+          </div>
+        {% elif available %}
+          <div class="text-success"><i class="bi bi-info-circle"></i> On the shelf at <b>{{ book.shelf }}</b> — take it to the circulation desk to borrow.</div>
+        {% else %}
+          <form method="post" action="{{ url_for('member.hold', book_id=book.id) }}">{{ csrf() }}
+            <button class="btn btn-warning w-100"><i class="bi bi-bookmark-plus"></i> Place hold / reserve</button>
+          </form>
+        {% endif %}
+      {% elif staff %}
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('catalog.edit', book_id=book.id) }}"><i class="bi bi-pencil"></i> Edit</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('catalog.labels', book=book.id) }}"><i class="bi bi-upc"></i> Print labels</a>
+          {% if g.user.role == 'admin' %}{{ post_button(url_for('catalog.delete', book_id=book.id), 'Delete', 'btn btn-sm btn-outline-danger', confirm='Delete this title permanently?', icon='trash') }}{% endif %}
+        </div>
+        <form method="post" action="{{ url_for('catalog.add_copies_view', book_id=book.id) }}" class="input-group input-group-sm mt-2">{{ csrf() }}
+          <span class="input-group-text">Add copies</span><input type="number" name="n" min="1" max="50" value="1" class="form-control" aria-label="Number of copies"><button class="btn btn-outline-success">Add &amp; assign barcodes</button>
+        </form>
+        {% if not available %}
+        <form method="post" action="{{ url_for('desk.hold') }}" class="input-group input-group-sm mt-2">{{ csrf() }}
+          <input type="hidden" name="book_id" value="{{ book.id }}"><input type="hidden" name="next" value="{{ request.path }}">
+          <span class="input-group-text">Place hold for</span><input name="member_code" class="form-control" placeholder="Member ID" required aria-label="Member ID"><button class="btn btn-outline-warning">Reserve</button>
+        </form>
+        {% endif %}
+      {% else %}
+        <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-outline-primary w-100">Sign in to reserve</a>
+      {% endif %}
+    </div></div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-header">Copies</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Barcode</th><th>Status</th><th>{{ 'Borrower / due' if staff else 'Due back' }}</th>{% if staff %}<th></th>{% endif %}</tr></thead>
+        <tbody>
+        {% for c in copies %}
+        <tr>
+          <td class="font-monospace">{{ c.barcode if staff else ('•••' ~ c.barcode[-3:]) }}</td>
+          <td>{{ copy_badge(c.status) }}</td>
+          <td>{% if c.loan_id %}{% if staff %}{{ c.borrower }} ({{ c.borrower_code }}) · {% endif %}due {{ c.due_date|fdate }}{% endif %}</td>
+          {% if staff %}<td class="text-end">
+            {% if c.status == 'loaned' %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('desk.index', tab='return', barcode=c.barcode) }}">Return</a>
+            {% elif c.status in ('available', 'damaged', 'discarded', 'lost') %}
+            <form method="post" action="{{ url_for('catalog.copy_status', copy_id=c.id) }}" class="d-inline-flex gap-1">{{ csrf() }}
+              <select name="status" class="form-select form-select-sm" aria-label="Change copy status">
+                {% for s in ('available','damaged','discarded','lost') %}<option {% if s == c.status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+              </select><button class="btn btn-sm btn-outline-secondary">Set</button>
+            </form>{% endif %}
+          </td>{% endif %}
+        </tr>
+        {% endfor %}
+        </tbody></table></div>
+    </div>
+    {% if staff and queue %}
+    <div class="card">
+      <div class="card-header">Hold queue</div>
+      <table class="table table-sm mb-0 align-middle"><thead><tr><th>#</th><th>Member</th><th>Placed</th><th>Status</th><th></th></tr></thead><tbody>
+      {% for h in queue %}<tr><td>{{ loop.index }}</td><td>{{ h.name }} ({{ h.member_code }})</td><td>{{ h.placed_at|fdatetime }}</td>
+        <td>{% if h.status == 'ready' %}<span class="badge text-bg-warning">Ready until {{ h.expires_at|fdate }}</span>{% else %}<span class="badge text-bg-light border">Waiting</span>{% endif %}</td>
+        <td>{{ post_button(url_for('desk.hold_cancel', hold_id=h.id), 'Cancel', 'btn btn-sm btn-outline-danger', confirm='Cancel this hold?', next=request.path) }}</td></tr>{% endfor %}
+      </tbody></table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+{% block content %}{{ body() }}{% endblock %}
+{% block public %}
+<nav class="navbar bg-white border-bottom mb-3"><div class="container"><a class="navbar-brand fw-bold text-primary" href="{{ url_for('main.opac') }}"><i class="bi bi-book-half"></i> ALMS · Public Catalog</a><a class="btn btn-primary btn-sm" href="{{ url_for('auth.login', next=request.path) }}">Sign in</a></div></nav>
+<div class="container">{{ body() }}</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}History{% endblock %}
+{% block heading %}Borrowing history &amp; fines{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-header">Loans</div><div class="table-responsive"><table class="table align-middle mb-0">
+  <thead><tr><th>Book</th><th>Issued</th><th>Due</th><th>Returned</th><th>Status</th><th>Fine</th></tr></thead><tbody>
+  {% for l in rows %}<tr><td><a href="{{ url_for('main.book_detail', book_id=l.book_id) }}">{{ l.title }}</a></td><td>{{ l.issue_date|fdate }}</td><td>{{ l.due_date|fdate }}</td><td>{{ l.return_date|fdate }}</td>
+    <td><span class="badge text-bg-{{ {'active':'primary','returned':'success','lost':'dark'}[l.status] }}">{{ l.status }}</span></td><td>{{ l.fine|rupees if l.fine else '—' }}</td></tr>
+  {% else %}<tr><td colspan="6" class="text-center text-muted py-4">No loans yet.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+<div class="card"><div class="card-header">Fines</div><div class="table-responsive"><table class="table align-middle mb-0">
+  <thead><tr><th>Reason</th><th>Assessed</th><th>Amount</th><th>Status</th><th>Receipt</th></tr></thead><tbody>
+  {% for f in fines %}<tr><td>{{ f.reason }}</td><td>{{ f.created_at|fdate }}</td><td>{{ f.amount|rupees }}</td>
+    <td><span class="badge text-bg-{{ {'unpaid':'danger','paid':'success','waived':'secondary'}[f.status] }}">{{ f.status }}</span></td>
+    <td>{% if f.receipt_no %}<a href="{{ url_for('main.receipt', receipt_no=f.receipt_no) }}">{{ f.receipt_no }}</a>{% elif f.status == 'unpaid' %}<a href="{{ url_for('member.pay') }}">Pay now</a>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5" class="text-center text-muted py-4">No fines — great job!</td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endblock %}

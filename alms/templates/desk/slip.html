@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Loan slip{% endblock %}
+{% block heading %}Loan slip{% endblock %}
+{% block content %}
+<div class="no-print mb-3 d-flex gap-2">
+  <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print date slip</button>
+  <a class="btn btn-outline-primary" href="{{ url_for('desk.index', tab='issue', member=loan.member_code) }}"><i class="bi bi-plus"></i> Issue another to {{ loan.member_code }}</a>
+  <a class="btn btn-outline-secondary" href="{{ url_for('desk.index') }}">New transaction</a>
+</div>
+<div class="receipt">
+  <div class="text-center mb-3"><div class="fw-bold fs-5">{{ library_name }}</div><div>LOAN SLIP / DATE DUE</div></div>
+  <div class="d-flex justify-content-between"><span>Loan no.</span><b>#{{ loan.id }}</b></div>
+  <div class="d-flex justify-content-between"><span>Member</span><span>{{ loan.name }} ({{ loan.member_code }})</span></div>
+  <hr>
+  <div class="fw-bold">{{ loan.title }}</div>
+  <div>{{ loan.author }}</div>
+  <div class="small">ISBN {{ loan.isbn }} · Copy {{ loan.barcode }}</div>
+  <hr>
+  <div class="d-flex justify-content-between"><span>Issued</span><span>{{ loan.issue_date|fdate }}</span></div>
+  <div class="d-flex justify-content-between fs-4 fw-bold"><span>DUE</span><span>{{ loan.due_date|fdate }}</span></div>
+  <div class="small mt-2">Late returns are fined ₹{{ fine_rate }} per day. Borrowing is blocked until dues are cleared.</div>
+  <div class="text-center mt-3"><svg data-barcode="{{ loan.barcode }}" data-height="35"></svg></div>
+  <div class="small text-center">Issued by {{ loan.staff_name or '—' }}</div>
+</div>
+{% endblock %}

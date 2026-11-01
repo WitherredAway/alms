@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, post_button %}
+{% block title %}Backup &amp; restore{% endblock %}
+{% block heading %}Backup &amp; restore system database{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3"><div class="card-header">Create / download</div><div class="card-body d-flex flex-wrap gap-2">
+      {{ post_button(url_for('admin.backup_create'), 'Create backup now', 'btn btn-primary', icon='database-add') }}
+      <a class="btn btn-outline-primary" href="{{ url_for('admin.backup_download') }}"><i class="bi bi-download"></i> Download live database</a>
+      <div class="small text-muted w-100">An automatic backup is taken once per day (7 most recent kept) in <code>{{ backup_dir }}</code>.</div>
+    </div></div>
+    <form class="card mb-3" method="post" action="{{ url_for('admin.backup_restore') }}" enctype="multipart/form-data" data-confirm="Restoring will overwrite ALL current data. Continue?">{{ csrf() }}
+      <div class="card-header">Restore from file</div><div class="card-body">
+        <input class="form-control mb-2" type="file" name="file" accept=".db,.sqlite,.sqlite3" aria-label="Backup file" required>
+        <button class="btn btn-warning"><i class="bi bi-upload"></i> Upload &amp; restore</button>
+        <div class="small text-muted mt-1">A safety snapshot is taken before restoring.</div></div></form>
+    <div class="card border-danger"><div class="card-header text-danger">Demo tools</div><div class="card-body">
+      {{ post_button(url_for('admin.reset_demo'), 'Reset demo data', 'btn btn-outline-danger', confirm='Wipe everything and reload the demo dataset?', icon='arrow-counterclockwise') }}
+      <div class="small text-muted mt-1">Reloads sample books, members, loans and fines relative to today's date.</div></div></div>
+  </div>
+  <div class="col-lg-7"><div class="card"><div class="card-header">Stored backups</div><div class="table-responsive"><table class="table table-sm align-middle mb-0">
+    <thead><tr><th>File</th><th>Size</th><th class="text-end">Actions</th></tr></thead><tbody>
+    {% for b in backups %}<tr><td class="font-monospace small">{{ b.name }}</td><td class="small">{{ b.size_kb }} KB</td><td class="text-end text-nowrap">
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.backup_download', name=b.name) }}"><i class="bi bi-download"></i></a>
+      <form method="post" action="{{ url_for('admin.backup_restore') }}" class="d-inline" data-confirm="Restore {{ b.name }}? Current data will be overwritten.">{{ csrf() }}<input type="hidden" name="name" value="{{ b.name }}"><button class="btn btn-sm btn-outline-warning">Restore</button></form></td></tr>
+    {% else %}<tr><td colspan="3" class="text-muted text-center py-3">No backups yet.</td></tr>{% endfor %}
+    </tbody></table></div></div></div>
+</div>
+{% endblock %}

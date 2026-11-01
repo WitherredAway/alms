@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_macros.html" import role_badge %}
+{% block title %}Members{% endblock %}
+{% block heading %}Members &amp; accounts{% endblock %}
+{% block content %}
+<form class="d-flex flex-wrap gap-2 mb-3">
+  <input class="form-control" style="max-width: 300px" name="q" value="{{ q }}" placeholder="Name, ID, email or phone" aria-label="Search members">
+  <select class="form-select" style="max-width: 180px" name="role" aria-label="Role"><option value="">All roles</option>{% for r in ('student','faculty','librarian','admin') %}<option value="{{ r }}" {% if r == role %}selected{% endif %}>{{ r|capitalize }}</option>{% endfor %}</select>
+  <button class="btn btn-outline-primary">Filter</button>
+  <a class="btn btn-primary ms-auto" href="{{ url_for('admin.member_new') }}"><i class="bi bi-person-plus"></i> Register member</a>
+</form>
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  <thead><tr><th>ID</th><th>Name</th><th>Role</th><th>Contact</th><th>Loans</th><th>Unpaid</th><th>Status</th></tr></thead><tbody>
+  {% for u in rows %}
+  <tr><td class="font-monospace">{{ u.member_code }}</td><td><a href="{{ url_for('admin.member_detail', user_id=u.id) }}">{{ u.name }}</a><div class="small text-muted">{{ u.department or '' }}</div></td>
+    <td>{{ role_badge(u.role) }}</td><td class="small">{{ u.email }}<div class="text-muted">{{ u.phone }}</div></td>
+    <td>{{ u.active_loans }}{% if u.overdue %} <span class="badge text-bg-danger">{{ u.overdue }} overdue</span>{% endif %}</td>
+    <td>{{ u.unpaid|rupees if u.unpaid else '—' }}</td>
+    <td>{% if u.active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Inactive</span>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody></table></div></div>
+{% endblock %}

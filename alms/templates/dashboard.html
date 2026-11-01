@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% from "_macros.html" import copy_badge %}
+{% block title %}Dashboard{% endblock %}
+{% block heading %}Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <a class="btn btn-primary" href="{{ url_for('desk.index') }}"><i class="bi bi-upc-scan"></i> Issue / Return</a>
+  <a class="btn btn-outline-primary" href="{{ url_for('catalog.new') }}"><i class="bi bi-plus-lg"></i> Add book</a>
+  <a class="btn btn-outline-primary" href="{{ url_for('admin.member_new') }}"><i class="bi bi-person-plus"></i> Register member</a>
+  <a class="btn btn-outline-secondary" href="{{ url_for('reports.index') }}"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
+</div>
+<div class="row g-3 mb-3">
+  {% set cards = [
+    ('Titles', stats.titles, 'book', 'primary', url_for('catalog.index')),
+    ('Copies available', stats.available ~ ' / ' ~ stats.copies, 'bookshelf', 'success', url_for('main.opac', available=1)),
+    ('Active loans', stats.active, 'journal-arrow-up', 'info', url_for('desk.loans')),
+    ('Overdue', stats.overdue, 'exclamation-triangle', 'danger', url_for('desk.loans', filter='overdue')),
+    ('Holds waiting / ready', stats.holds_waiting ~ ' / ' ~ stats.holds_ready, 'hourglass-split', 'warning', url_for('desk.holds')),
+    ('Active members', stats.members, 'people', 'secondary', url_for('admin.members')),
+    ('Unpaid fines', stats.unpaid|rupees, 'cash-coin', 'danger', url_for('reports.index', tab='dues')),
+    ('Collected (30 days)', stats.collected_30|rupees, 'wallet2', 'success', url_for('reports.index', tab='fines')),
+  ] %}
+  {% for label, value, icon, color, href in cards %}
+  <div class="col-6 col-xl-3">
+    <a href="{{ href }}" class="text-decoration-none">
+      <div class="card stat-card h-100"><div class="card-body d-flex align-items-center gap-3">
+        <div class="icon bg-{{ color }}-subtle text-{{ color }}"><i class="bi bi-{{ icon }}"></i></div>
+        <div><div class="text-muted small">{{ label }}</div><div class="fs-4 fw-semibold text-body">{{ value }}</div></div>
+      </div></div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between"><span>Circulation — last 30 days</span><span class="small text-muted">Today: {{ stats.issued_today }} issued · {{ stats.returned_today }} returned</span></div>
+      <div class="card-body"><canvas id="trendChart" height="110" aria-label="Loans issued and returned per day" role="img"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Loans by category</div>
+      <div class="card-body"><canvas id="catChart" height="220" aria-label="Loans by category" role="img"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between"><span><i class="bi bi-exclamation-triangle text-danger"></i> Overdue loans</span><a class="small" href="{{ url_for('desk.loans', filter='overdue') }}">View all</a></div>
+      <div class="table-responsive"><table class="table table-sm mb-0 align-middle">
+        <thead><tr><th>Member</th><th>Book</th><th>Due</th><th></th></tr></thead>
+        <tbody>
+        {% for l in overdue %}
+          <tr><td><a href="{{ url_for('admin.member_detail', user_id=l.user_id) }}">{{ l.name }}</a><div class="small text-muted">{{ l.member_code }}</div></td>
+              <td>{{ l.title }}<div class="small text-muted">{{ l.barcode }}</div></td>
+              <td class="text-danger">{{ l.due_date|fdate }}</td>
+              <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('desk.index', tab='return', barcode=l.barcode) }}">Return</a></td></tr>
+        {% else %}<tr><td colspan="4" class="text-muted text-center py-3">No overdue loans 🎉</td></tr>{% endfor %}
+        </tbody></table></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-bookmark-check text-warning"></i> Hold shelf — ready for pickup</div>
+      <div class="table-responsive"><table class="table table-sm mb-0 align-middle">
+        <thead><tr><th>Member</th><th>Book</th><th>Pick up by</th><th></th></tr></thead>
+        <tbody>
+        {% for h in ready %}
+          <tr><td>{{ h.name }}<div class="small text-muted">{{ h.member_code }}</div></td><td>{{ h.title }}<div class="small text-muted">{{ h.barcode }}</div></td><td>{{ h.expires_at|fdate }}</td>
+          <td><a class="btn btn-sm btn-outline-success" href="{{ url_for('desk.index', tab='issue', member=h.member_code, barcode=h.barcode) }}">Issue</a></td></tr>
+        {% else %}<tr><td colspan="4" class="text-muted text-center py-3">Hold shelf is empty</td></tr>{% endfor %}
+        </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-header d-flex justify-content-between"><span><i class="bi bi-activity"></i> Recent activity</span><a class="small" href="{{ url_for('admin.audit_log') }}">Audit log</a></div>
+      <ul class="list-group list-group-flush small">
+        {% for a in activity %}
+        <li class="list-group-item d-flex gap-2"><span class="badge text-bg-light border">{{ a.action }}</span><span class="text-truncate">{{ a.details }}</span><span class="ms-auto text-muted text-nowrap">{{ a.ts|fdatetime }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script>
+const trend = {{ trend|tojson }}, cats = {{ cats|tojson }};
+new Chart(document.getElementById('trendChart'), { type: 'bar', data: { labels: trend.labels, datasets: [
+  { label: 'Issued', data: trend.issued, backgroundColor: '#3b82f6' }, { label: 'Returned', data: trend.returned, backgroundColor: '#22c55e' }] },
+  options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { position: 'bottom' } } } });
+new Chart(document.getElementById('catChart'), { type: 'doughnut', data: { labels: cats.map(c => c.category), datasets: [{ data: cats.map(c => c.n) }] },
+  options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } } });
+</script>
+{% endblock %}

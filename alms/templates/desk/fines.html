@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, due_badge %}
+{% block title %}Fines — {{ status.user.name }}{% endblock %}
+{% block heading %}Fines &amp; dues — {{ status.user.name }} ({{ status.user.member_code }}){% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card"><div class="card-header">Unpaid fines</div>
+      <form method="post" action="{{ url_for('desk.pay', user_id=status.user.id) }}">{{ csrf() }}
+      <div class="table-responsive"><table class="table align-middle mb-0">
+        <thead><tr><th><input type="checkbox" class="form-check-input" data-check-all="input[name=fine_id]" checked aria-label="Select all"></th><th>Reason</th><th>Assessed</th><th class="text-end">Amount</th><th></th></tr></thead>
+        <tbody>
+        {% for f in status.unpaid_fines %}
+        <tr><td><input type="checkbox" class="form-check-input" name="fine_id" value="{{ f.id }}" data-amount="{{ f.amount }}" checked aria-label="Select fine"></td>
+          <td>{{ f.reason }}</td><td class="small">{{ f.created_at|fdate }}</td><td class="text-end fw-semibold">{{ f.amount|rupees }}</td>
+          <td class="text-end"><button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#waive{{ f.id }}">Waive</button></td></tr>
+        {% else %}<tr><td colspan="5" class="text-center text-muted py-4">No unpaid fines.</td></tr>{% endfor %}
+        </tbody></table></div>
+      {% if status.unpaid_fines %}
+      <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+        <span>Selected: <b id="selectedTotal" class="fs-5">₹0</b></span>
+        <button class="btn btn-success"><i class="bi bi-cash"></i> Collect cash &amp; print receipt</button>
+      </div>{% endif %}
+      </form>
+    </div>
+    {% for f in status.unpaid_fines %}
+    <div class="modal fade" id="waive{{ f.id }}" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('desk.waive', fine_id=f.id) }}">{{ csrf() }}
+      <div class="modal-header"><h5 class="modal-title">Waive {{ f.amount|rupees }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+      <div class="modal-body"><label class="form-label" for="note{{ f.id }}">Reason for override (logged in audit trail)</label><input class="form-control" id="note{{ f.id }}" name="note" required placeholder="e.g. Medical leave"></div>
+      <div class="modal-footer"><button class="btn btn-warning">Waive fine</button></div></form></div></div>
+    {% endfor %}
+    {% if status.accruing_total %}
+    <div class="alert alert-warning mt-3"><b>{{ status.accruing_total|rupees }}</b> is still accruing on overdue books currently on loan. Check them in to finalise the fine:
+      <ul class="mb-0">{% for l in status.loans if l.overdue_days %}<li>{{ l.title }} ({{ l.barcode }}) — {{ l.overdue_days }}d, {{ l.accrued|rupees }} <a href="{{ url_for('desk.index', tab='return', barcode=l.barcode) }}">Return now</a></li>{% endfor %}</ul></div>
+    {% endif %}
+  </div>
+  <div class="col-lg-5">
+    <div class="card"><div class="card-header">Payment history</div>
+      <ul class="list-group list-group-flush small">
+      {% for f in history %}
+        <li class="list-group-item d-flex justify-content-between"><span>{{ f.reason }}<div class="text-muted">{{ f.paid_at|fdate }} · {{ f.method }}{% if f.receipt_no %} · <a href="{{ url_for('main.receipt', receipt_no=f.receipt_no) }}">{{ f.receipt_no }}</a>{% endif %}</div></span>
+          <span class="{{ 'text-decoration-line-through text-muted' if f.status == 'waived' }}">{{ f.amount|rupees }}</span></li>
+      {% else %}<li class="list-group-item text-muted">No payments yet.</li>{% endfor %}
+      </ul></div>
+  </div>
+</div>
+{% endblock %}

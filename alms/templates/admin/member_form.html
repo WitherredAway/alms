@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}{{ 'Register member' if is_new else 'Edit account' }}{% endblock %}
+{% block heading %}{{ 'Register new account' if is_new else 'Edit — ' ~ u.member_code }}{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width: 720px">{{ csrf() }}<div class="card-body row g-3">
+  <div class="col-md-6"><label class="form-label" for="name">Full name *</label><input class="form-control" id="name" name="name" value="{{ u.name or '' }}" required></div>
+  <div class="col-md-6"><label class="form-label" for="role">Role *</label><select class="form-select" id="role" name="role">{% for r in roles %}<option value="{{ r }}" {% if r == u.role %}selected{% endif %}>{{ r|capitalize }}</option>{% endfor %}</select></div>
+  <div class="col-md-6"><label class="form-label" for="email">Email</label><input class="form-control" id="email" type="email" name="email" value="{{ u.email or '' }}"></div>
+  <div class="col-md-6"><label class="form-label" for="phone">Mobile</label><input class="form-control" id="phone" name="phone" value="{{ u.phone or '' }}" placeholder="+91 …"></div>
+  <div class="col-md-6"><label class="form-label" for="department">Department / course</label><input class="form-control" id="department" name="department" value="{{ u.department or '' }}"></div>
+  {% if is_new %}<div class="col-md-6"><label class="form-label" for="password">Initial password</label><input class="form-control" id="password" name="password" placeholder="Leave blank to auto-generate"><div class="form-text">Member ID is generated automatically (STU###, FAC###…).</div></div>{% endif %}
+</div><div class="card-footer bg-white"><button class="btn btn-primary">{{ 'Create account' if is_new else 'Save' }}</button></div></form>
+{% endblock %}

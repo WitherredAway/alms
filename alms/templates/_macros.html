@@ -1,0 +1,28 @@
+{% macro copy_badge(status) -%}
+{%- set colors = {'available':'success','loaned':'primary','on_hold':'warning','damaged':'danger','lost':'dark','discarded':'secondary'} -%}
+<span class="badge badge-status text-bg-{{ colors.get(status, 'secondary') }}">{{ status.replace('_', ' ') }}</span>
+{%- endmacro %}
+
+{% macro role_badge(role) -%}
+{%- set colors = {'admin':'danger','librarian':'success','faculty':'info','student':'primary'} -%}
+<span class="badge text-bg-{{ colors.get(role, 'secondary') }}">{{ role|capitalize }}</span>
+{%- endmacro %}
+
+{% macro due_badge(loan) -%}
+{%- if loan.overdue_days and loan.overdue_days > 0 -%}
+<span class="badge text-bg-danger">Overdue {{ loan.overdue_days }}d</span>
+{%- else -%}
+{%- set left = (loan.due_date|string)[:10] -%}
+<span class="badge text-bg-light border">Due {{ loan.due_date|fdate }}</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro csrf() -%}<input type="hidden" name="_csrf" value="{{ csrf_token() }}">{%- endmacro %}
+
+{% macro post_button(action, label, cls='btn btn-sm btn-outline-secondary', confirm=None, next=None, icon=None) -%}
+<form method="post" action="{{ action }}" class="d-inline" {% if confirm %}data-confirm="{{ confirm }}"{% endif %}>
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+  <button class="{{ cls }}" type="submit">{% if icon %}<i class="bi bi-{{ icon }}"></i> {% endif %}{{ label }}</button>
+</form>
+{%- endmacro %}

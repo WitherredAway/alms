@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block public %}
+<div class="login-wrap">
+  <div class="container" style="max-width: 920px">
+    <div class="card overflow-hidden shadow-lg"><div class="row g-0">
+      <div class="col-md-6 p-4 p-lg-5 bg-white">
+        <div class="mb-4">
+          <div class="fs-3 fw-bold text-primary"><i class="bi bi-book-half"></i> ALMS</div>
+          <div class="text-muted">Automated Library Management System · {{ library_name }}</div>
+        </div>
+        <form method="post" id="loginForm" novalidate>
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label" for="username">Member ID or email</label>
+            <input class="form-control form-control-lg" id="username" name="username" autocomplete="username" required autofocus placeholder="e.g. STU001">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="password">Password</label>
+            <input class="form-control form-control-lg" id="password" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-box-arrow-in-right"></i> Sign in</button>
+        </form>
+        <div class="mt-3 text-center"><a href="{{ url_for('main.opac') }}" class="small"><i class="bi bi-search"></i> Browse the public catalog (OPAC) without signing in</a></div>
+      </div>
+      <div class="col-md-6 p-4 p-lg-5 bg-light">
+        {% if demo %}
+        <h2 class="h6 text-uppercase text-muted">Demo accounts <span class="badge text-bg-secondary">password: demo123</span></h2>
+        <div class="d-grid gap-2 mt-3">
+          {% set hints = {'ADM001':'Admin — settings, backup, all reports','LIB001':'Librarian — circulation desk','STU001':'Eligible student, book due soon','STU002':'Blocked — overdue book','STU003':'Blocked — unpaid fine ₹45','STU004':'Blocked — quota reached (3/3)','STU005':'Has a hold ready + queued hold','FAC001':'Faculty member (quota 5)'} %}
+          {% for u in demo %}
+          <button type="button" class="btn btn-outline-primary demo-btn bg-white" data-demo-user="{{ u.member_code }}" data-demo-pass="demo123">
+            <div class="d-flex justify-content-between"><b>{{ u.name }}</b><span class="badge text-bg-secondary">{{ u.member_code }}</span></div>
+            <div class="small text-muted">{{ hints.get(u.member_code, u.role) }}</div>
+          </button>
+          {% endfor %}
+        </div>
+        {% else %}
+        <h2 class="h5">Welcome</h2>
+        <p class="text-muted">Search the catalog, manage loans, reserve books and pay fines online.</p>
+        {% endif %}
+      </div>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

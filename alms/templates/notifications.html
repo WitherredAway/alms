@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block heading %}{{ 'Notification Gateway (simulated Email / SMS)' if staff else 'My notifications' }}{% endblock %}
+{% block content %}
+{% if staff %}
+<div class="alert alert-info small"><i class="bi bi-info-circle"></i> ALMS has no live Email/SMS provider in demo mode. This outbox shows every message the system would send through the gateway (issue confirmations, due-date reminders, overdue notices, hold alerts, payment receipts).</div>
+{% endif %}
+<div class="d-flex gap-2 mb-3 flex-wrap">
+  {% if staff %}
+  <div class="btn-group btn-group-sm">
+    <a class="btn btn-outline-secondary {{ 'active' if scope == 'all' }}" href="?scope=all&channel={{ channel }}">All members</a>
+    <a class="btn btn-outline-secondary {{ 'active' if scope == 'mine' }}" href="?scope=mine&channel={{ channel }}">Mine</a>
+  </div>
+  {% endif %}
+  <div class="btn-group btn-group-sm">
+    <a class="btn btn-outline-secondary {{ 'active' if not channel }}" href="?scope={{ scope }}">All channels</a>
+    <a class="btn btn-outline-secondary {{ 'active' if channel == 'email' }}" href="?scope={{ scope }}&channel=email"><i class="bi bi-envelope"></i> Email</a>
+    <a class="btn btn-outline-secondary {{ 'active' if channel == 'sms' }}" href="?scope={{ scope }}&channel=sms"><i class="bi bi-phone"></i> SMS</a>
+  </div>
+</div>
+<div class="card"><div class="table-responsive"><table class="table align-middle mb-0">
+  <thead><tr><th>Sent</th><th>Channel</th>{% if staff %}<th>To</th>{% endif %}<th>Message</th></tr></thead>
+  <tbody>
+  {% for n in rows %}
+  <tr class="{{ 'table-primary' if not n.is_read and n.user_id == g.user.id }}">
+    <td class="small text-nowrap">{{ n.created_at|fdatetime }}</td>
+    <td>{% if n.channel == 'email' %}<span class="badge text-bg-primary"><i class="bi bi-envelope"></i> Email</span>{% else %}<span class="badge text-bg-success"><i class="bi bi-phone"></i> SMS</span>{% endif %}</td>
+    {% if staff %}<td class="small">{{ n.name }} ({{ n.member_code }})<div class="text-muted">{{ n.email if n.channel == 'email' else n.phone }}</div></td>{% endif %}
+    <td><b>{{ n.subject }}</b><div class="small">{{ n.body }}</div></td>
+  </tr>
+  {% else %}<tr><td colspan="4" class="text-center text-muted py-4">No notifications yet.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endblock %}

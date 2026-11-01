@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}ALMS{% endblock %} · {{ library_name }}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📚</text></svg>">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<a class="skip-link btn btn-light" href="#main">Skip to content</a>
+{% if g.user %}
+{% set ep = request.endpoint or '' %}
+{% macro nav(endpoint, icon, label, match=None) -%}
+  <a class="nav-link {% if ep == endpoint or (match and ep.startswith(match)) %}active{% endif %}" href="{{ url_for(endpoint) }}"
+     {% if ep == endpoint %}aria-current="page"{% endif %}><i class="bi bi-{{ icon }}"></i> {{ label }}</a>
+{%- endmacro %}
+<div class="app-shell">
+  <nav class="sidebar" aria-label="Main navigation">
+    <a class="brand" href="{{ url_for('main.index') }}"><i class="bi bi-book-half"></i> ALMS<small>{{ library_name }}</small></a>
+    {% if g.user.role in ('librarian', 'admin') %}
+      <div class="nav-section">Overview</div>
+      {{ nav('main.dashboard', 'speedometer2', 'Dashboard') }}
+      <div class="nav-section">Circulation</div>
+      {{ nav('desk.index', 'upc-scan', 'Circulation Desk') }}
+      {{ nav('desk.loans', 'journal-arrow-up', 'Active Loans') }}
+      {{ nav('desk.holds', 'hourglass-split', 'Holds Queue') }}
+      <div class="nav-section">Catalog</div>
+      {{ nav('main.opac', 'search', 'OPAC Search') }}
+      {{ nav('catalog.index', 'collection', 'Manage Catalog', 'catalog.') }}
+      <div class="nav-section">People</div>
+      {{ nav('admin.members', 'people', 'Members', 'admin.member') }}
+      <div class="nav-section">Insights</div>
+      {{ nav('reports.index', 'bar-chart-line', 'Reports') }}
+      {{ nav('main.notifications', 'broadcast', 'Notification Gateway') }}
+      {{ nav('admin.audit_log', 'shield-check', 'Audit Log') }}
+      {% if g.user.role == 'admin' %}
+      <div class="nav-section">Administration</div>
+      {{ nav('admin.settings', 'sliders', 'Policies & Settings') }}
+      {{ nav('admin.backup', 'database-gear', 'Backup & Restore') }}
+      {% endif %}
+    {% else %}
+      <div class="nav-section">My Library</div>
+      {{ nav('member.home', 'house', 'My Dashboard') }}
+      {{ nav('main.opac', 'search', 'Search Catalog') }}
+      {{ nav('member.history', 'clock-history', 'History & Fines') }}
+      {{ nav('member.pay', 'credit-card', 'Pay Fines') }}
+      {{ nav('main.notifications', 'bell', 'Notifications') }}
+      {{ nav('member.card', 'person-vcard', 'Library Card') }}
+      {{ nav('auth.profile', 'person-gear', 'Profile') }}
+    {% endif %}
+  </nav>
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-sm btn-outline-secondary d-lg-none" id="sidebarToggle" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
+      <div class="fw-semibold text-truncate">{% block heading %}{% endblock %}</div>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        {% if g.user.role in ('librarian', 'admin') %}
+        <div class="dropdown sim-date">
+          <button class="btn btn-sm {{ 'btn-warning' if date_offset else 'btn-outline-secondary' }} dropdown-toggle" data-bs-toggle="dropdown" aria-label="Simulate system date">
+            <i class="bi bi-calendar3"></i> {{ today|fdate }}{% if date_offset %} <span class="badge text-bg-dark">+{{ date_offset }}d</span>{% endif %}
+          </button>
+          <div class="dropdown-menu dropdown-menu-end p-3" style="width: 280px">
+            <div class="small text-muted mb-2">Demo time-travel: move the system date forward to show due dates, overdue fines and hold expiry.</div>
+            <div class="d-flex flex-wrap gap-1">
+              {% for d in (1, 3, 7, 15, 30) %}
+              <form method="post" action="{{ url_for('main.simulate_date') }}">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="days" value="{{ d }}">
+                <input type="hidden" name="next" value="{{ request.full_path }}">
+                <button class="btn btn-sm btn-outline-primary">+{{ d }}d</button>
+              </form>
+              {% endfor %}
+              <form method="post" action="{{ url_for('main.simulate_date') }}">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="reset">
+                <input type="hidden" name="next" value="{{ request.full_path }}">
+                <button class="btn btn-sm btn-outline-danger">Reset</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% else %}
+          <span class="badge text-bg-light border sim-date"><i class="bi bi-calendar3"></i> {{ today|fdate }}</span>
+        {% endif %}
+        <a class="btn btn-sm btn-outline-secondary position-relative" href="{{ url_for('main.notifications') }}" aria-label="Notifications">
+          <i class="bi bi-bell"></i>{% if unread_count %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ unread_count }}</span>{% endif %}
+        </a>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-light border dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle"></i> {{ g.user.name }} <span class="badge text-bg-secondary">{{ g.user.role|capitalize }}</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><span class="dropdown-item-text small text-muted">ID: {{ g.user.member_code }}</span></li>
+            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="bi bi-person-gear"></i> Profile & password</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('member.card') }}"><i class="bi bi-person-vcard"></i> ID card</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="dropdown-item text-danger"><i class="bi bi-box-arrow-right"></i> Sign out</button></form></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="content" id="main">
+      {% include "_flashes.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+<main id="main">{% include "_flashes.html" %}{% block public %}{% endblock %}</main>
+{% endif %}
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/JsBarcode.all.min.js') }}"></script>
+{% block scripts_pre %}{% endblock %}
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

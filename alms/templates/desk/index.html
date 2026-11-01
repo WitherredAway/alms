@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Circulation Desk{% endblock %}
+{% block heading %}Circulation Desk{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header p-0">
+        <ul class="nav nav-tabs card-header-tabs m-0 px-2 pt-2" role="tablist">
+          <li class="nav-item"><button class="nav-link {{ 'active' if tab == 'issue' }}" data-bs-toggle="tab" data-bs-target="#tabIssue" type="button" role="tab"><i class="bi bi-box-arrow-up-right"></i> Issue (check-out)</button></li>
+          <li class="nav-item"><button class="nav-link {{ 'active' if tab == 'return' }}" data-bs-toggle="tab" data-bs-target="#tabReturn" type="button" role="tab"><i class="bi bi-box-arrow-in-down-left"></i> Return (check-in)</button></li>
+        </ul>
+      </div>
+      <div class="card-body tab-content">
+        <div class="tab-pane fade {{ 'show active' if tab == 'issue' }}" id="tabIssue" role="tabpanel">
+          <form method="post" action="{{ url_for('desk.issue') }}">{{ csrf() }}
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="memberCode">1. Scan member ID card</label>
+              <input class="form-control form-control-lg scan-input" id="memberCode" name="member_code" value="{{ member_code }}" placeholder="STU001" autocomplete="off" required {% if tab == 'issue' %}autofocus{% endif %}>
+            </div>
+            <div class="mb-2">
+              <label class="form-label fw-semibold" for="issueBarcode">2. Scan book barcode</label>
+              <input class="form-control form-control-lg scan-input" id="issueBarcode" name="barcode" value="{{ barcode if tab == 'issue' }}" placeholder="BC100001" autocomplete="off" required data-copy-info="issueCopyInfo">
+              <div id="issueCopyInfo" class="small mt-1" data-url="{{ url_for('desk.copy_info') }}"></div>
+            </div>
+            <button class="btn btn-primary btn-lg w-100 mt-2"><i class="bi bi-check2-circle"></i> Issue book</button>
+            <div class="form-text">Checks pending fines and borrowing quota, decrements stock, sets due date = today + loan period, prints a date slip and sends Email/SMS confirmation.</div>
+          </form>
+        </div>
+        <div class="tab-pane fade {{ 'show active' if tab == 'return' }}" id="tabReturn" role="tabpanel">
+          <form method="post" action="{{ url_for('desk.return_view') }}">{{ csrf() }}
+            <div class="mb-2">
+              <label class="form-label fw-semibold" for="returnBarcode">Scan returned book barcode</label>
+              <input class="form-control form-control-lg scan-input" id="returnBarcode" name="barcode" value="{{ barcode if tab == 'return' }}" placeholder="BC100001" autocomplete="off" required data-copy-info="returnCopyInfo" {% if tab == 'return' %}autofocus{% endif %}>
+              <div id="returnCopyInfo" class="small mt-1" data-url="{{ url_for('desk.copy_info') }}"></div>
+            </div>
+            <fieldset class="mb-3"><legend class="form-label fw-semibold fs-6">Inspect condition</legend>
+              <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="condition" id="condGood" value="good" checked><label class="form-check-label" for="condGood">Good — restock</label></div>
+              <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="condition" id="condDamaged" value="damaged"><label class="form-check-label" for="condDamaged">Damaged — withdraw</label></div>
+            </fieldset>
+            <button class="btn btn-success btn-lg w-100"><i class="bi bi-box-arrow-in-down-left"></i> Check in</button>
+            <div class="form-text">Closes the loan, computes overdue fine, restocks the copy (+1) or routes it to the next member in the hold queue.</div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card"><div class="card-header"><i class="bi bi-person-badge"></i> Member profile</div>
+      <div id="memberPanel" data-url="{{ url_for('desk.member_panel') }}"><div class="text-muted small p-3">Scan or type a member ID to load their profile, active loans and dues.</div></div>
+    </div>
+    <div class="card mt-3"><div class="card-body small text-muted">
+      <i class="bi bi-upc-scan"></i> USB/Bluetooth barcode scanners work out of the box — they type into the focused field and press Enter.
+      Print member cards from <a href="{{ url_for('admin.members') }}">Members</a> and spine labels from <a href="{{ url_for('catalog.labels') }}">Catalog → Labels</a>.
+    </div></div>
+  </div>
+</div>
+{% endblock %}
