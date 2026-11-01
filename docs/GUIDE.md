@@ -2,6 +2,12 @@
 
 This guide explains how ALMS works inside, how the project booklet's diagrams turn into code, and how to build a similar app from scratch. For setup and the demo script, see the [README](../README.md).
 
+## See it in action
+
+[![ALMS demo walkthrough: click to watch the full video](media/demo-preview.gif)](media/alms-demo.mp4)
+
+*Sped-up preview. [Watch the full recording](media/alms-demo.mp4) to see each flow described in this guide running end to end.*
+
 - [1. The big picture](#1-the-big-picture)
 - [2. Folder & file tour](#2-folder--file-tour)
 - [3. The database](#3-the-database)

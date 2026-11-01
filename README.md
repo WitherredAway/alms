@@ -2,6 +2,12 @@
 
 A web app for running a college library: book search, issuing and returning books, holds, overdue fines, reports and admin tools. It uses **Flask + SQLite**, needs no database server, and runs **fully offline** once installed (Bootstrap, icons, Chart.js and JsBarcode are bundled).
 
+## Demo video
+
+[![ALMS demo walkthrough: click to watch the full video](docs/media/demo-preview.gif)](docs/media/alms-demo.mp4)
+
+*Sped-up preview. Click it, or [open the full 4.5-minute recording](docs/media/alms-demo.mp4), to watch issuing and returning books, the hold queue, time travel and fines, online payment, reports and admin tools.*
+
 ## Quick start (WSL / Ubuntu / macOS)
 
 ```bash
