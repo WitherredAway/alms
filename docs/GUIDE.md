@@ -19,6 +19,7 @@ This guide explains how ALMS works inside, how the project booklet's diagrams tu
 - [9. Build one yourself: step-by-step](#9-build-one-yourself-step-by-step)
 - [10. Viva / interview questions](#10-viva--interview-questions)
 - [11. Ideas to extend it](#11-ideas-to-extend-it)
+- [12. Deploying with Docker (Google Cloud VM)](#12-deploying-with-docker-google-cloud-vm)
 
 ---
 
@@ -545,5 +546,97 @@ Replace the body of `services.notify()` with an SMTP call or an SMS provider's A
 - **Book cover images and metadata** fetched by ISBN from the Open Library API.
 - **REST API + mobile app:** expose `services.py` functions as JSON endpoints.
 - **Multi-branch libraries:** add a `branch_id` to copies and users.
-- **PostgreSQL + Docker** for deployment; HTTPS through Caddy or Nginx.
+- **PostgreSQL** for more users; HTTPS through Caddy or Nginx (see section 12).
 - **Recommendations:** "members who borrowed X also borrowed Y" using the loans table.
+
+---
+
+## 12. Deploying with Docker (Google Cloud VM)
+
+### What the Docker files do
+
+| File | Purpose |
+|---|---|
+| `Dockerfile` | Builds the image, step by step (see below). |
+| `docker-compose.yml` | Builds and runs the image as service `alms`, with `restart: unless-stopped` so it comes back after a VM reboot. It maps host port `${ALMS_PUBLIC_PORT:-5000}` to container port 5000 and mounts the named volume `alms-data` at `/data`. |
+| `.dockerignore` | Keeps `.venv`, the local database, tests and the demo video out of the image, so it stays small. |
+
+The `Dockerfile`, step by step:
+1. Starts from `python:3.12-slim`.
+2. Installs `requirements.txt`.
+3. Copies in `alms/` and `run.py`.
+4. Runs as a non-root `alms` user.
+5. Stores data in `/data` (`ALMS_DATA_DIR`).
+6. Listens on `0.0.0.0:5000` (`ALMS_HOST`).
+7. Includes a `HEALTHCHECK` that fetches `/login`.
+
+Why the volume matters: a container's filesystem is thrown away when it's rebuilt. Everything that must persist is kept in `/data`, which lives in the `alms-data` volume: `alms.db`, `secret_key` (keeps users logged in across restarts) and `backups/`. This works because `create_app()` reads `ALMS_DATA_DIR`.
+
+Why `0.0.0.0`: inside a container, `127.0.0.1` means "only this container". Binding to `0.0.0.0` lets Docker's port mapping forward outside traffic in.
+
+### Steps on the VM
+
+```mermaid
+flowchart LR
+    U["Browser anywhere"] -- "http://EXTERNAL_IP:5000" --> FW["GCP firewall rule<br/>allow tcp:5000"]
+    FW --> VM["VM :5000"]
+    VM -- "docker port map" --> C["alms container :5000"]
+    C --- V[("volume alms-data<br/>/data/alms.db")]
+```
+
+**1. Get the code onto the VM.** The repo is private, so authenticate first: either `gh auth login`, or clone with a personal access token.
+```bash
+git clone https://github.com/WitherredAway/alms.git
+cd alms
+docker compose up -d --build
+docker compose ps            # STATUS should become "healthy"
+curl -I localhost:5000/login # HTTP/1.1 200 OK
+```
+It runs next to your Discord bot container without interfering, because each compose project gets its own network.
+
+**2. Open the port in the GCP firewall.** Run this from Cloud Shell or any machine with `gcloud`; replace `VM_NAME` and `ZONE`:
+```bash
+gcloud compute instances add-tags VM_NAME --zone ZONE --tags alms
+gcloud compute firewall-rules create allow-alms \
+  --network default --direction INGRESS --allow tcp:5000 \
+  --target-tags alms --source-ranges 0.0.0.0/0
+```
+To make it reachable only from your own network, use `--source-ranges YOUR_PUBLIC_IP/32`. You can find your IP with `curl ifconfig.me` on your laptop.
+
+If you prefer the Cloud Console: *VPC network → Firewall → Create rule*.
+- Direction: ingress
+- Targets: specified target tags, `alms`
+- Source range: `0.0.0.0/0`
+- Protocols and ports: TCP 5000
+
+**3. Find the external IP.**
+```bash
+gcloud compute instances describe VM_NAME --zone ZONE \
+  --format='get(networkInterfaces[0].accessConfigs[0].natIP)'
+```
+Or run `curl -s ifconfig.me` on the VM. Then open `http://EXTERNAL_IP:5000`.
+
+An *ephemeral* external IP changes if you stop and start the VM. To keep the same address, promote it to a static IP: *VPC network → IP addresses → Reserve*, or use `gcloud compute addresses create`.
+
+**4. Secure it before sharing the link.** The demo accounts use a known password (`demo123`). Either:
+- keep the firewall limited to your IP, or
+- sign in as admin, turn off **Show demo account shortcuts** in *Policies & Settings*, and reset the staff passwords from *Members*.
+
+### Optional: HTTPS with a domain
+Point a domain's A record at the external IP. Then run [Caddy](https://caddyserver.com) in front of the app; it gets Let's Encrypt certificates automatically. Add this to `docker-compose.yml`:
+```yaml
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    command: caddy reverse-proxy --from library.example.com --to alms:5000
+```
+Open ports 80 and 443 in the firewall instead of 5000. You can then remove the `ports:` mapping from the `alms` service so the app is only reachable through Caddy.
+
+### Day-to-day
+```bash
+git pull && docker compose up -d --build                  # deploy new code
+docker compose logs -f alms                               # watch logs
+docker compose exec alms flask --app alms reset-demo      # fresh demo data
+docker compose cp alms:/data/alms.db ./alms-backup.db     # off-VM backup
+```

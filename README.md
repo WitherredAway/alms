@@ -26,6 +26,28 @@ sudo apt update && sudo apt install -y python3 python3-venv
 
 Options: `./start.sh --port 8080`, `./start.sh --no-browser`, `./start.sh --reset` (wipe and reload demo data).
 
+## Run with Docker (any Linux server, e.g. a Google Cloud VM)
+
+```bash
+git clone https://github.com/WitherredAway/alms.git && cd alms
+docker compose up -d --build          # builds the image and starts it in the background
+```
+
+The app listens on port **5000**. Data (SQLite DB, secret key, daily backups) lives in the named volume `alms-data`, so it survives restarts and rebuilds.
+
+| Task | Command |
+|---|---|
+| Use a different host port | `ALMS_PUBLIC_PORT=8080 docker compose up -d` |
+| View logs | `docker compose logs -f` |
+| Update to latest code | `git pull && docker compose up -d --build` |
+| Reset demo data | `docker compose exec alms flask --app alms reset-demo` |
+| Copy the DB out (backup) | `docker compose cp alms:/data/alms.db ./alms-backup.db` |
+| Stop | `docker compose down` (add `-v` to also delete the data) |
+
+To reach it from the internet on a GCP VM (firewall rule + external IP), see [GUIDE § Deploying with Docker](docs/GUIDE.md#12-deploying-with-docker-google-cloud-vm).
+
+> **Public instance warning:** the demo accounts all use `demo123`, and the sign-in page shows one-click logins. Before sharing a public URL, either limit the firewall to your own IP, or sign in as `ADM001` → *Policies & Settings* → turn off "Show demo account shortcuts" and change the passwords.
+
 ## Demo accounts (password `demo123` for all)
 
 The sign-in page has one-click buttons for each account.
