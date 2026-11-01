@@ -77,6 +77,7 @@ def create_app(test_config=None):
             "unread_count": unread,
             "library_name": setting("library_name"),
             "fine_rate": setting("fine_per_day"),
+            "loan_days": setting("loan_days"),
         }
 
     @app.template_filter("rupees")

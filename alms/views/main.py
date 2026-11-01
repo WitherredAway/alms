@@ -36,7 +36,7 @@ def dashboard():
         "returned_today": q("SELECT COUNT(*) FROM loans WHERE return_date = ?", t.isoformat()),
         "collected_30": q(
             "SELECT COALESCE(SUM(amount),0) FROM fines WHERE status = 'paid' AND paid_at >= ?",
-            (t - timedelta(days=30)).isoformat(),
+            (t - timedelta(days=29)).isoformat(),
         ),
     }
     days = [t - timedelta(days=i) for i in range(29, -1, -1)]
