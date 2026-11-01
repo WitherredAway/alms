@@ -1,0 +1,11 @@
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}
+  <div class="{{ 'container mt-3' if not g.user else '' }}" role="status" aria-live="polite">
+    {% for cat, m in msgs %}
+    <div class="alert alert-{{ cat if cat != 'message' else 'info' }} alert-dismissible fade show" role="alert">
+      {{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}

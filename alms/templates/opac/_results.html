@@ -1,0 +1,28 @@
+<div class="d-flex justify-content-between align-items-center mb-2 small text-muted">
+  <span>{{ books|length }} result{{ '' if books|length == 1 else 's' }}{% if q %} for “{{ q }}”{% endif %}</span>
+  <span>Search time: <span id="searchTiming">—</span></span>
+</div>
+<div class="card"><div class="table-responsive">
+<table class="table table-hover align-middle mb-0">
+  <thead><tr><th>Title</th><th>Author</th><th>ISBN</th><th>Category</th><th>Shelf</th><th class="text-center">Availability</th></tr></thead>
+  <tbody>
+  {% for b in books %}
+    <tr>
+      <td><a class="fw-semibold" href="{{ url_for('main.book_detail', book_id=b.id) }}">{{ b.title }}</a><div class="small text-muted">{{ b.publisher }}{% if b.year %}, {{ b.year }}{% endif %}</div></td>
+      <td>{{ b.author }}</td>
+      <td class="font-monospace small">{{ b.isbn }}</td>
+      <td><span class="badge text-bg-light border">{{ b.category }}</span></td>
+      <td class="font-monospace small">{{ b.shelf }}</td>
+      <td class="text-center">
+        {% if b.available %}<span class="badge text-bg-success">{{ b.available }} of {{ b.total }} available</span>
+        {% else %}<span class="badge text-bg-danger">All {{ b.total }} out</span>
+          {% if b.next_due %}<div class="small text-muted">next due {{ b.next_due|fdate }}</div>{% endif %}
+        {% endif %}
+        {% if b.queue %}<div class="small text-warning-emphasis">{{ b.queue }} in hold queue</div>{% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-center text-muted py-4">No books match your search.</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div></div>

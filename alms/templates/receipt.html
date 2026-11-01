@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Receipt {{ receipt_no }}{% endblock %}
+{% block heading %}Payment receipt{% endblock %}
+{% block content %}
+<div class="no-print mb-3 d-flex gap-2"><button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print / Save PDF</button>
+  <a class="btn btn-outline-secondary" href="{{ url_for('desk.fines', user_id=fines[0].user_id) if g.user.role in ('librarian','admin') else url_for('member.home') }}">Back</a></div>
+<div class="receipt">
+  <div class="text-center mb-3"><div class="fw-bold fs-5">{{ library_name }}</div><div>FINE PAYMENT RECEIPT</div></div>
+  <div class="d-flex justify-content-between"><span>Receipt no.</span><b>{{ receipt_no }}</b></div>
+  <div class="d-flex justify-content-between"><span>Date</span><span>{{ fines[0].paid_at|fdatetime }}</span></div>
+  <div class="d-flex justify-content-between"><span>Member</span><span>{{ fines[0].name }} ({{ fines[0].member_code }})</span></div>
+  <div class="d-flex justify-content-between"><span>Method</span><span>{{ fines[0].method }}</span></div>
+  {% if fines[0].staff_name %}<div class="d-flex justify-content-between"><span>Processed by</span><span>{{ fines[0].staff_name }}</span></div>{% endif %}
+  <hr>
+  {% for f in fines %}<div class="d-flex justify-content-between gap-3"><span>{{ f.reason }}</span><span>{{ f.amount|rupees }}</span></div>{% endfor %}
+  <hr>
+  <div class="d-flex justify-content-between fw-bold fs-5"><span>TOTAL PAID</span><span>{{ total|rupees }}</span></div>
+  <div class="text-center mt-3"><svg data-barcode="{{ receipt_no }}" data-height="35"></svg></div>
+  <div class="text-center small mt-2">Borrowing privileges restored. Thank you!</div>
+</div>
+{% endblock %}
