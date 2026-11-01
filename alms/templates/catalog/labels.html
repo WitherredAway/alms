@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Barcode labels{% endblock %}
+{% block heading %}Barcode labels ({{ rows|length }}){% endblock %}
+{% block content %}
+<div class="no-print mb-3"><button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print labels</button></div>
+<div class="label-grid">{% for r in rows %}<div class="lbl"><div class="small fw-semibold text-truncate">{{ r.title }}</div><svg data-barcode="{{ r.barcode }}" data-height="38"></svg><div class="small font-monospace">{{ r.shelf }}</div></div>{% endfor %}</div>
+{% endblock %}

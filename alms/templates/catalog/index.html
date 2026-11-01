@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Manage catalog{% endblock %}
+{% block heading %}Catalog management{% endblock %}
+{% block content %}
+<form class="d-flex flex-wrap gap-2 mb-3">
+  <input class="form-control" style="max-width: 320px" name="q" value="{{ q }}" placeholder="Title, author or ISBN" aria-label="Search">
+  <select class="form-select" style="max-width: 220px" name="category" aria-label="Category"><option value="">All categories</option>{% for c in categories %}<option {% if c == category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+  <button class="btn btn-outline-primary">Filter</button>
+  <div class="ms-auto d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('catalog.labels') }}"><i class="bi bi-upc"></i> Barcode labels</a>
+    <a class="btn btn-primary" href="{{ url_for('catalog.new') }}"><i class="bi bi-plus-lg"></i> Add book</a>
+  </div>
+</form>
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  <thead><tr><th>Title</th><th>Author</th><th>ISBN</th><th>Category</th><th>Shelf</th><th>Available</th><th></th></tr></thead><tbody>
+  {% for b in books %}
+  <tr><td><a href="{{ url_for('main.book_detail', book_id=b.id) }}">{{ b.title }}</a></td><td>{{ b.author }}</td><td class="font-monospace small">{{ b.isbn }}</td>
+    <td>{{ b.category }}</td><td class="font-monospace small">{{ b.shelf }}</td><td>{{ b.available }} / {{ b.total }}</td>
+    <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('catalog.edit', book_id=b.id) }}"><i class="bi bi-pencil"></i></a></td></tr>
+  {% endfor %}
+  </tbody></table></div></div>
+{% endblock %}

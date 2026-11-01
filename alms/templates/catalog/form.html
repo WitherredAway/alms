@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}{{ 'Add book' if is_new else 'Edit book' }}{% endblock %}
+{% block heading %}{{ 'Add new book' if is_new else 'Edit — ' ~ book.title }}{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width: 820px">{{ csrf() }}<div class="card-body row g-3">
+  <div class="col-md-6"><label class="form-label" for="isbn">ISBN *</label><input class="form-control font-monospace" id="isbn" name="isbn" value="{{ book.isbn or '' }}" required placeholder="10 or 13 digits"></div>
+  <div class="col-md-6"><label class="form-label" for="category">Category</label><input class="form-control" id="category" name="category" list="cats" value="{{ book.category or '' }}"><datalist id="cats">{% for c in categories %}<option>{{ c }}</option>{% endfor %}</datalist></div>
+  <div class="col-12"><label class="form-label" for="title">Title *</label><input class="form-control" id="title" name="title" value="{{ book.title or '' }}" required></div>
+  <div class="col-md-6"><label class="form-label" for="author">Author *</label><input class="form-control" id="author" name="author" value="{{ book.author or '' }}" required></div>
+  <div class="col-md-6"><label class="form-label" for="publisher">Publisher</label><input class="form-control" id="publisher" name="publisher" value="{{ book.publisher or '' }}"></div>
+  <div class="col-md-4"><label class="form-label" for="year">Year</label><input class="form-control" id="year" name="year" value="{{ book.year or '' }}" inputmode="numeric"></div>
+  <div class="col-md-4"><label class="form-label" for="shelf">Shelf location</label><input class="form-control font-monospace" id="shelf" name="shelf" value="{{ book.shelf or '' }}" placeholder="CS-01-A"></div>
+  {% if is_new %}<div class="col-md-4"><label class="form-label" for="copies">Number of copies *</label><input class="form-control" id="copies" type="number" min="1" max="50" name="copies" value="{{ copies or 1 }}" required><div class="form-text">Barcodes are assigned automatically.</div></div>{% endif %}
+</div>
+<div class="card-footer bg-white d-flex gap-2"><button class="btn btn-primary">{{ 'Add book' if is_new else 'Save changes' }}</button><a class="btn btn-outline-secondary" href="{{ url_for('main.book_detail', book_id=book.id) if book.id else url_for('catalog.index') }}">Cancel</a></div>
+</form>
+{% endblock %}
