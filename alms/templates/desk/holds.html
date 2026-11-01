@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import post_button %}
+{% block title %}Holds queue{% endblock %}
+{% block heading %}Holds &amp; reservations queue{% endblock %}
+{% block content %}
+<div class="card"><div class="table-responsive"><table class="table align-middle mb-0">
+  <thead><tr><th>Book</th><th>Member</th><th>Placed</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+  <tbody>
+  {% for h in rows %}
+  <tr class="{{ 'table-warning' if h.status == 'ready' }}">
+    <td><a href="{{ url_for('main.book_detail', book_id=h.book_id) }}">{{ h.title }}</a></td>
+    <td>{{ h.name }}<div class="small text-muted">{{ h.member_code }}</div></td>
+    <td class="small">{{ h.placed_at|fdatetime }}</td>
+    <td>{% if h.status == 'ready' %}<span class="badge text-bg-warning">On hold shelf · copy {{ h.barcode }}</span><div class="small">collect by {{ h.expires_at|fdate }}</div>
+        {% else %}<span class="badge text-bg-light border">Waiting · #{{ h.position }}</span>{% endif %}</td>
+    <td class="text-end text-nowrap">
+      {% if h.status == 'ready' %}<a class="btn btn-sm btn-success" href="{{ url_for('desk.index', tab='issue', member=h.member_code, barcode=h.barcode) }}">Issue</a>{% endif %}
+      {{ post_button(url_for('desk.hold_cancel', hold_id=h.id), 'Cancel', 'btn btn-sm btn-outline-danger', confirm='Cancel this hold?') }}
+    </td>
+  </tr>
+  {% else %}<tr><td colspan="5" class="text-center text-muted py-4">No active holds.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endblock %}

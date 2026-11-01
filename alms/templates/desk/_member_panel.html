@@ -1,0 +1,35 @@
+{% from "_macros.html" import due_badge, role_badge %}
+{% if not status %}
+  <div class="p-3 text-danger"><i class="bi bi-x-circle"></i> No member found for “{{ code }}”.</div>
+{% else %}
+{% set u = status.user %}
+<div class="p-3 border-bottom d-flex justify-content-between align-items-start">
+  <div><div class="fw-semibold"><a href="{{ url_for('admin.member_detail', user_id=u.id) }}">{{ u.name }}</a></div>
+    <div class="small text-muted">{{ u.member_code }} · {{ u.department or '' }}</div><div class="mt-1">{{ role_badge(u.role) }}</div></div>
+  <div class="text-end">
+    {% if status.eligible %}<span class="badge text-bg-success fs-6"><i class="bi bi-check-circle"></i> Eligible</span>
+    {% else %}<span class="badge text-bg-danger fs-6"><i class="bi bi-slash-circle"></i> Blocked</span>{% endif %}
+    {% if status.quota %}<div class="small text-muted mt-1">Loans {{ status.loans|length }} / {{ status.quota }}</div>{% endif %}
+  </div>
+</div>
+{% if status.reasons %}
+<div class="alert alert-danger m-3 mb-0 py-2 small"><ul class="mb-0 ps-3">{% for r in status.reasons %}<li>{{ r }}</li>{% endfor %}</ul>
+  {% if status.unpaid_total %}<a class="btn btn-sm btn-danger mt-2" href="{{ url_for('desk.fines', user_id=u.id) }}"><i class="bi bi-cash-coin"></i> Collect {{ status.unpaid_total|rupees }}</a>{% endif %}
+</div>
+{% endif %}
+<div class="p-3">
+  <div class="small fw-semibold text-muted mb-1">Active loans</div>
+  {% for l in status.loans %}
+    <div class="d-flex justify-content-between align-items-center small py-1 border-bottom">
+      <span class="text-truncate me-2">{{ l.title }} <span class="text-muted font-monospace">{{ l.barcode }}</span></span>
+      <span class="text-nowrap">{{ due_badge(l) }}{% if l.accrued %} <span class="text-danger">{{ l.accrued|rupees }}</span>{% endif %}</span>
+    </div>
+  {% else %}<div class="small text-muted">None</div>{% endfor %}
+  {% if status.holds %}
+  <div class="small fw-semibold text-muted mt-3 mb-1">Holds</div>
+  {% for h in status.holds %}
+    <div class="small py-1">{{ h.title }} — {% if h.status == 'ready' %}<span class="badge text-bg-warning">Ready for pickup</span>{% else %}<span class="badge text-bg-light border">#{{ h.position }} in queue</span>{% endif %}</div>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endif %}

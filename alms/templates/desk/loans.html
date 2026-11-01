@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_macros.html" import due_badge, post_button %}
+{% block title %}Active loans{% endblock %}
+{% block heading %}Active loans{% endblock %}
+{% block content %}
+<form class="d-flex flex-wrap gap-2 mb-3">
+  <div class="btn-group">
+    {% for k, label in (('all','All'),('due_soon','Due in 3 days'),('overdue','Overdue')) %}
+    <a class="btn btn-sm btn-outline-secondary {{ 'active' if filter == k }}" href="?filter={{ k }}&q={{ q }}">{{ label }}</a>{% endfor %}
+  </div>
+  <input type="hidden" name="filter" value="{{ filter }}">
+  <input class="form-control form-control-sm" style="max-width: 280px" name="q" value="{{ q }}" placeholder="Member, title or barcode" aria-label="Filter loans">
+  <button class="btn btn-sm btn-outline-primary">Filter</button>
+  <span class="ms-auto small text-muted align-self-center">{{ rows|length }} loan(s)</span>
+</form>
+<div class="card"><div class="table-responsive"><table class="table align-middle mb-0">
+  <thead><tr><th>Member</th><th>Book</th><th>Issued</th><th>Due</th><th>Fine</th><th class="text-end">Actions</th></tr></thead>
+  <tbody>
+  {% for l in rows %}
+  <tr>
+    <td><a href="{{ url_for('admin.member_detail', user_id=l.user_id) }}">{{ l.name }}</a><div class="small text-muted">{{ l.member_code }}</div></td>
+    <td><a href="{{ url_for('main.book_detail', book_id=l.book_id) }}">{{ l.title }}</a><div class="small text-muted font-monospace">{{ l.barcode }}</div></td>
+    <td class="small">{{ l.issue_date|fdate }}{% if l.renewals %}<div class="text-muted">renewed ×{{ l.renewals }}</div>{% endif %}</td>
+    <td>{{ due_badge(l) }}</td>
+    <td>{% if l.accrued %}<span class="text-danger fw-semibold">{{ l.accrued|rupees }}</span>{% else %}—{% endif %}</td>
+    <td class="text-end text-nowrap">
+      <a class="btn btn-sm btn-success" href="{{ url_for('desk.index', tab='return', barcode=l.barcode) }}">Return</a>
+      {{ post_button(url_for('desk.renew', loan_id=l.id), 'Renew', 'btn btn-sm btn-outline-primary', next=request.full_path) }}
+      {{ post_button(url_for('desk.lost', loan_id=l.id), 'Lost', 'btn btn-sm btn-outline-danger', confirm='Mark this book as lost and charge the replacement fee?', next=request.full_path) }}
+    </td>
+  </tr>
+  {% else %}<tr><td colspan="6" class="text-center text-muted py-4">No loans match.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endblock %}
