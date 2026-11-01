@@ -1,0 +1,13 @@
+services:
+  alms:
+    build: .
+    image: alms:latest
+    container_name: alms
+    restart: unless-stopped
+    ports:
+      - "${ALMS_PUBLIC_PORT:-5000}:5000"
+    volumes:
+      - alms-data:/data
+
+volumes:
+  alms-data:
